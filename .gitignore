@@ -1,0 +1,31 @@
+# Ambiente / segredos
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Artefatos de ML / dados grandes (nao versionar)
+models/*.pkl
+models/*.joblib
+data/raw/*
+data/processed/*
+data/knowledge/.chroma/
+!**/.gitkeep
+
+# Vetores / embeddings
+*.faiss
+*.index
+
+# Relatorios / auditoria (gerados em runtime)
+data/reports/audits/*.jsonl
+*.pdf
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store

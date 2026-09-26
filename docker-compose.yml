@@ -1,0 +1,12 @@
+services:
+  guardia-ai:
+    build: .
+    container_name: guardia-ai
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    restart: unless-stopped
