@@ -21,11 +21,14 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
 class LLMConfig(BaseSettings):
-    """Provedor de LLM (OpenAI ou Azure OpenAI)."""
+    """Provedor de LLM. O padrão é Ollama na própria máquina, sem chave."""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    provider: Literal["openai", "azure"] = Field(default="openai")
+    provider: Literal["ollama", "openai", "azure"] = Field(default="ollama", alias="LLM_PROVIDER")
+    ollama_model: str = Field(default="llama3", alias="OLLAMA_MODEL")
+    ollama_base_url: str = Field(default="http://127.0.0.1:11434", alias="OLLAMA_BASE_URL")
+
     openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
     openai_model: str = Field(default="gpt-4o-mini", alias="OPENAI_MODEL")
 
@@ -37,10 +40,18 @@ class LLMConfig(BaseSettings):
     embeddings_model: str = Field(default="text-embedding-3-small", alias="EMBEDDINGS_MODEL")
 
     @property
-    def is_configured(self) -> bool:
+    def has_remote_api(self) -> bool:
         if self.provider == "azure":
             return bool(self.azure_openai_api_key and self.azure_openai_endpoint)
-        return bool(self.openai_api_key)
+        if self.provider == "openai":
+            return bool(self.openai_api_key)
+        return False
+
+    @property
+    def is_configured(self) -> bool:
+        if self.provider == "ollama":
+            return True
+        return self.has_remote_api
 
 
 class RAGConfig(BaseSettings):

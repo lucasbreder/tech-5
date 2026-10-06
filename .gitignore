@@ -13,6 +13,9 @@ venv/
 models/*.pkl
 models/*.joblib
 data/raw/*
+!data/raw/.gitkeep
+!data/raw/*.csv
+!data/raw/DATA_SOURCE.md
 data/processed/*
 data/knowledge/.chroma/
 !**/.gitkeep
@@ -23,7 +26,11 @@ data/knowledge/.chroma/
 
 # Relatorios / auditoria (gerados em runtime)
 data/reports/audits/*.jsonl
+data/reports/analise_*.json
+data/reports/analise_*.md
+data/knowledge/.embed_backend
 *.pdf
+!relatorio/relatorio_tecnico.pdf
 
 # IDE / OS
 .vscode/

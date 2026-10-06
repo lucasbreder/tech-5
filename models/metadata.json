@@ -1,0 +1,53 @@
+{
+  "dataset": "UCI Maternal Health Risk Data Set",
+  "dataset_url": "https://archive.ics.uci.edu/dataset/863/maternal+health+risk",
+  "dataset_sha256": "a1f7025719f84715096e0d1f95ae2e56b57809b9b15449e1836c96a7d976ae9b",
+  "trained_at": "2026-10-05T15:15:19.379767+00:00",
+  "python_version": "3.12.3",
+  "pandas_version": "3.0.6",
+  "sklearn_version": "1.9.1",
+  "rows_raw": 1014,
+  "rows_after_exact_deduplication": 451,
+  "rows_removed_label_conflict": 71,
+  "rows_prepared": 380,
+  "rows_train": 304,
+  "rows_test": 76,
+  "features": [
+    "age",
+    "systolic_bp",
+    "diastolic_bp",
+    "blood_sugar",
+    "body_temp",
+    "heart_rate"
+  ],
+  "target": "risk_level",
+  "labels": [
+    "alto",
+    "baixo",
+    "moderado"
+  ],
+  "best_model": "random_forest",
+  "selection_rule": "5-fold CV no treino: recall_alto_mean, depois precision_alto_mean, depois f1_mean",
+  "shap_model": "random_forest",
+  "units": {
+    "age": "anos",
+    "systolic_bp": "mmHg",
+    "diastolic_bp": "mmHg",
+    "blood_sugar": "mg/dL",
+    "body_temp": "C",
+    "heart_rate": "bpm"
+  },
+  "feature_baselines": {
+    "age": 25.0,
+    "systolic_bp": 120.0,
+    "diastolic_bp": 80.0,
+    "blood_sugar": 135.0,
+    "body_temp": 36.666666666666664,
+    "heart_rate": 75.0
+  },
+  "class_counts": {
+    "baixo": 203,
+    "alto": 101,
+    "moderado": 76
+  }
+}

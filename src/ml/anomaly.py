@@ -1,7 +1,7 @@
-"""Detecção de anomalias em sinais vitais — reuso do anomaly_agent do tech-4.
+"""Sinais fora da faixa de atenção e combinações incomuns.
 
-Pode funcionar como UM DOS modelos de risco (Isolation Forest + Z-Score)
-e também como checagem de consistência dos dados de entrada.
+Isolation Forest + faixas clínicas. Não classifica risco e não dispara
+encaminhamento automático: só destaca o que o profissional deve reler.
 """
 
 from __future__ import annotations
@@ -10,14 +10,21 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import IsolationForest
 
-# Faixas de referência (gestante) — adaptadas do tech-4.
+# Faixa de atenção da aplicação — não é critério diagnóstico.
 VITAL_RANGES: dict[str, tuple[float, float]] = {
-    "systolic_bp": (90.0, 140.0),
-    "diastolic_bp": (60.0, 90.0),
+    "systolic_bp": (90.0, 139.0),
+    "diastolic_bp": (60.0, 89.0),
     "heart_rate": (60.0, 100.0),
-    "temperature": (36.1, 37.2),
-    "oxygen_saturation": (95.0, 100.0),
-    "glucose": (70.0, 140.0),
+    "body_temp": (36.0, 37.7),
+    "blood_sugar": (70.0, 139.0),
+}
+
+RANGE_LABELS = {
+    "systolic_bp": "pressão sistólica",
+    "diastolic_bp": "pressão diastólica",
+    "heart_rate": "frequência cardíaca",
+    "body_temp": "temperatura",
+    "blood_sugar": "glicemia",
 }
 
 
@@ -31,7 +38,11 @@ def zscore_flags(df: pd.DataFrame, columns: list[str], threshold: float = 3.0) -
     return out
 
 
-def fit_isolation_forest(df: pd.DataFrame, contamination: float = 0.05, random_state: int = 42) -> IsolationForest:
+def fit_isolation_forest(
+    df: pd.DataFrame,
+    contamination: float = 0.08,
+    random_state: int = 42,
+) -> IsolationForest:
     cols = list(df.select_dtypes("number").columns)
     model = IsolationForest(contamination=contamination, random_state=random_state)
     model.fit(df[cols])
@@ -39,10 +50,16 @@ def fit_isolation_forest(df: pd.DataFrame, contamination: float = 0.05, random_s
 
 
 def reference_range_flags(row: dict) -> list[str]:
-    """Lista de sinais fora da faixa clínica de referência."""
+    """Nomes das variáveis fora da faixa de atenção."""
     flags = []
     for signal, (lo, hi) in VITAL_RANGES.items():
         value = row.get(signal)
-        if value is not None and not (lo <= float(value) <= hi):
+        if value is None:
+            continue
+        if not (lo <= float(value) <= hi):
             flags.append(signal)
     return flags
+
+
+def describe_flags(flags: list[str]) -> list[str]:
+    return [RANGE_LABELS.get(flag, flag) for flag in flags]

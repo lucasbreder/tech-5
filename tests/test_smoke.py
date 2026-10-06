@@ -18,7 +18,11 @@ def test_preprocess_drops_dupes_and_nulls():
         {
             "age": [30, 30, 40, None],
             "systolic_bp": [120, 120, 150, 130],
-            "risk_level": ["low", "low", "high", "low"],
+            "diastolic_bp": [80, 80, 95, 85],
+            "blood_sugar": [100, 100, 180, 110],
+            "body_temp": [36.7, 36.7, 38.0, 36.8],
+            "heart_rate": [75, 75, 95, 80],
+            "risk_level": ["baixo", "baixo", "alto", "baixo"],
         }
     )
     out = preprocess(df, target="risk_level")

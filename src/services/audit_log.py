@@ -43,5 +43,14 @@ def read_logs(date: str | None = None) -> list[dict[str, Any]]:
         if not path.exists():
             continue
         with path.open(encoding="utf-8") as f:
-            records.extend(json.loads(line) for line in f if line.strip())
+            for line_number, line in enumerate(f, 1):
+                if not line.strip():
+                    continue
+                try:
+                    records.append(json.loads(line))
+                except json.JSONDecodeError as exc:
+                    logger.warning(
+                        f"Registro de auditoria inválido ignorado em "
+                        f"{path.name}:{line_number}: {exc}"
+                    )
     return records

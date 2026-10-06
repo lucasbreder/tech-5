@@ -1,62 +1,68 @@
-"""Chunking + embeddings de protocolos/cartilhas públicas (requisito #7).
-
-Coloque PDFs/Markdown de protocolos (ex.: cartilhas SUS de pré-natal ou de
-atenção à mulher em situação de violência) em `data/knowledge/` e rode
-`python main.py rag-ingest`.
-"""
+"""Chunking + indexação dos protocolos de apoio (requisito #7)."""
 
 from __future__ import annotations
 
-import hashlib
+import re
 from pathlib import Path
 
 from loguru import logger
 
 from src.config import settings
-from src.rag.store import get_collection
-
-
-def _embed(texts: list[str]) -> list[list[float]]:
-    """Gera embeddings via LangChain (OpenAI/Azure), com fallback determinístico."""
-    try:
-        from src.llm.client import get_embeddings
-
-        return get_embeddings().embed_documents(texts)
-    except Exception as exc:  # sem chave de API → permite desenvolver o pipeline offline
-        logger.warning(f"Embeddings de API indisponíveis ({exc}); usando hash local (apenas dev).")
-        return [[b / 255.0 for b in hashlib.sha256(t.encode()).digest()[:64]] for t in texts]
+from src.rag.embeddings import embed_documents, write_backend
+from src.rag.store import reset_collection
 
 
 def ingest_documents(directory: str | Path | None = None) -> int:
-    """Lê .md/.txt de `data/knowledge/`, chunka e indexa. Retorna nº de chunks."""
+    """Lê .md/.txt de `data/knowledge/`, recria o índice e devolve o nº de chunks."""
     directory = Path(directory or settings.path(settings.knowledge_dir))
-    collection = get_collection()
-    total = 0
-    for file in sorted(directory.glob("**/*")):
-        if file.suffix.lower() not in {".md", ".txt"}:
-            continue
+    files = [
+        file
+        for file in sorted(directory.glob("**/*"))
+        if file.is_file() and file.suffix.lower() in {".md", ".txt"} and ".chroma" not in file.parts
+    ]
+    chunks: list[tuple[str, str, str, str]] = []
+    for file in files:
         text = file.read_text(encoding="utf-8", errors="ignore")
+        source_url = _source_url(text)
         for i, chunk in enumerate(_chunk(text)):
-            doc_id = f"{file.name}:{i}"
-            collection.upsert(
-                ids=[doc_id],
-                documents=[chunk],
-                embeddings=_embed([chunk]),
-                metadatas=[{"source": file.name, "chunk": i}],
-            )
-            total += 1
-    logger.info(f"RAG: {total} chunks indexados em '{settings.rag.collection_name}'.")
-    return total
+            chunks.append((f"{file.name}:{i}", chunk, file.name, source_url))
+
+    if not chunks:
+        logger.warning(f"Nenhum .md/.txt em {directory}.")
+        return 0
+
+    vectors, backend = embed_documents([chunk for _, chunk, _, _ in chunks])
+    write_backend(backend)
+    collection = reset_collection()
+    collection.upsert(
+        ids=[item[0] for item in chunks],
+        documents=[item[1] for item in chunks],
+        embeddings=vectors,
+        metadatas=[
+            {"source": item[2], "source_url": item[3], "chunk": i}
+            for i, item in enumerate(chunks)
+        ],
+    )
+    logger.info(f"RAG: {len(chunks)} chunks indexados com backend '{backend}'.")
+    return len(chunks)
+
+
+def _source_url(text: str) -> str:
+    match = re.search(r"^Fonte oficial:\s*(https?://\S+)", text, flags=re.MULTILINE)
+    return match.group(1).rstrip(".,)") if match else ""
 
 
 def _chunk(text: str) -> list[str]:
     size, overlap = settings.rag.chunk_size, settings.rag.chunk_overlap
+    text = text.strip()
+    if not text:
+        return []
     if len(text) <= size:
-        return [text] if text.strip() else []
+        return [text]
     chunks, start = [], 0
     while start < len(text):
-        piece = text[start : start + size]
-        if piece.strip():
+        piece = text[start : start + size].strip()
+        if piece:
             chunks.append(piece)
-        start += size - overlap
+        start += max(size - overlap, 1)
     return chunks

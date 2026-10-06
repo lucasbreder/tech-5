@@ -4,6 +4,7 @@ Comandos:
     train        Treina os 2+ modelos e imprime a comparação de métricas (#3/#4)
     predict      Analisa um caso e grava relatório + auditoria
     rag-ingest   Indexa protocolos/cartilhas de data/knowledge na base RAG (#7)
+    report       Gera o relatório técnico em PDF (#13)
     demo         Sobe a interface Streamlit (#9)
 """
 
@@ -24,9 +25,13 @@ def train(target: str = typer.Option(None, help="Nome da coluna alvo (padrão: s
     """Treina os modelos e mostra a comparação de métricas."""
     from src.ml.train import train_all
 
+    from src.ml.evaluate import METRIC_RATIONALE
+
     table = train_all(target=target)
-    console.print("\n[bold]Comparação de modelos[/bold]")
+    console.print("\n[bold]Comparação de modelos (teste)[/bold]")
     console.print(table.round(3))
+    console.print(f"\n{METRIC_RATIONALE}")
+    console.print(f"\nModelo escolhido: [bold]{table.index[0]}[/bold]")
     logger.info("Treino concluído. Modelos salvos em models/.")
 
 
@@ -43,7 +48,10 @@ def rag_ingest(directory: str = typer.Argument("data/knowledge")):
 def predict(
     features: str = typer.Option(..., help='JSON dos dados, ex.: {"age":28,"systolic_bp":138}'),
     report: str = typer.Option(None, help="Relato textual do atendimento"),
-    model: str = typer.Option("random_forest", help="Modelo treinado"),
+    model: str | None = typer.Option(
+        None,
+        help="Modelo treinado. Se omitido, usa o escolhido pelas métricas do treino.",
+    ),
 ):
     """Rodar a jornada completa para um caso (ML -> RAG -> LLM) + salvar relatório."""
     from src.graph.workflow import analyze_case
@@ -66,6 +74,15 @@ def demo():
     raise typer.Exit(
         subprocess.call(["streamlit", "run", "src/app.py", "--server.port", "8501"])
     )
+
+
+@app.command("report")
+def technical_report():
+    """Gerar o relatório técnico da entrega em PDF."""
+    from src.utils.technical_report import generate_technical_report
+
+    path = generate_technical_report()
+    console.print(f"[green]Relatório gerado em {path}.[/green]")
 
 
 if __name__ == "__main__":

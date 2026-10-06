@@ -5,7 +5,11 @@ __pycache__
 *.pyc
 .env
 data/raw/*
+!data/raw/*.csv
+!data/raw/DATA_SOURCE.md
 data/processed/*
 models/*.pkl
+data/reports/
+data/knowledge/.embed_backend
 !**/.gitkeep
 *.pt

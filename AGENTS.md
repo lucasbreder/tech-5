@@ -22,19 +22,19 @@ Entrada dos dados → análise por ML → consulta de documentos (RAG)
 
 | # | Requisito | Status |
 |---|-----------|--------|
-| 1 | Conjunto de dados relacionado ao problema (preferencialmente público/anonimizado/sintético) | ⬜ |
-| 2 | Exploração + preparação dos dados | ⬜ |
-| 3 | Treinar **≥ 2 modelos** de Machine Learning | ⬜ |
-| 4 | Comparar com métricas adequadas (accuracy, precision, recall, F1) e **justificar** a escolha + impacto dos erros | ⬜ |
-| 5 | Interpretabilidade: **feature importance / SHAP** (ou equivalente) | ⬜ |
-| 6 | Integração com uma **LLM** (interpretar resultados, resumir relatos, explicar) | ⬜ |
-| 7 | **RAG** com base de conhecimento (protocolos, cartilhas, docs públicos) + citar o documento usado | ⬜ |
-| 8 | Orquestrar o fluxo com **LangChain** ou **LangGraph** (fluxo simples basta; agentes = diferencial) | ⬜ |
-| 9 | Aplicação executável: **Streamlit / Gradio / API / web** | ⬜ |
-| 10 | **Dockerfile** (execução containerizada) | ⬜ |
-| 11 | **Registro/log das análises** (auditoria, explicabilidade) | ⬜ |
-| 12 | Repositório Git: código + notebooks/scripts de treino + instruções + README | ⬜ |
-| 13 | **Relatório técnico em PDF** (problema, dados, preparação, modelos, métricas, LLM, RAG, limitações) | ⬜ |
+| 1 | Conjunto de dados relacionado ao problema (preferencialmente público/anonimizado/sintético) | ✅ |
+| 2 | Exploração + preparação dos dados | ✅ |
+| 3 | Treinar **≥ 2 modelos** de Machine Learning | ✅ |
+| 4 | Comparar com métricas adequadas (accuracy, precision, recall, F1) e **justificar** a escolha + impacto dos erros | ✅ |
+| 5 | Interpretabilidade: **feature importance / SHAP** (ou equivalente) | ✅ |
+| 6 | Integração com uma **LLM** (interpretar resultados, resumir relatos, explicar) | ✅ |
+| 7 | **RAG** com base de conhecimento (protocolos, cartilhas, docs públicos) + citar o documento usado | ✅ |
+| 8 | Orquestrar o fluxo com **LangChain** ou **LangGraph** (fluxo simples basta; agentes = diferencial) | ✅ |
+| 9 | Aplicação executável: **Streamlit / Gradio / API / web** | ✅ |
+| 10 | **Dockerfile** (execução containerizada) | ✅ |
+| 11 | **Registro/log das análises** (auditoria, explicabilidade) | ✅ |
+| 12 | Repositório Git: código + notebooks/scripts de treino + instruções + README | ✅ |
+| 13 | **Relatório técnico em PDF** (problema, dados, preparação, modelos, métricas, LLM, RAG, limitações) | ✅ |
 | 14 | **Vídeo de até 15 min** (YouTube/Vimeo, público ou não listado) com jornada completa | ⬜ |
 
 ### Cenário recomendado para o grupo
@@ -152,7 +152,7 @@ O tech-4 foi **monitoramento multimodal (vídeo/áudio/vitais)**. O tech-5 é **
 | Item do tech-4 | Uso no tech-5 |
 |----------------|---------------|
 | `src/config.py` — Pydantic Settings + `resolve_device()` + caminhos de diretório | Mesma base de config; trocar chaves Azure por OpenAI/Azure OpenAI + vector store |
-| `.env.example` (chaves Azure/OpenAI) | Manter `OPENAI_API_KEY` / `AZURE_OPENAI_*`; descartar Speech/Vision/Storage |
+| `.env.example` (LLM) | Ollama local por padrão; OpenAI/Azure apenas como alternativas |
 | `services/alert_service.py` (SMTP, logging, JSON) | Modelo para `services/audit_log.py` (registro das análises — requisito #11) |
 | `utils/report_generator.py` (JSON + Markdown/Jinja2) | Base para gerar o relatório técnico em PDF (#13) |
 | `agents/anomaly_agent.py` (Isolation Forest + Z-Score + faixas de gestante) | Vira `ml/anomaly.py` — **um dos 2+ modelos** (detecção de risco materno) |
@@ -203,7 +203,7 @@ loguru>=0.7
 jinja2>=3.1
 
 # Relatório PDF
-md2pdf>=1.0           # ou weasyprint / reportlab
+reportlab>=4.2        # relatório PDF sem dependências gráficas do sistema
 
 # Testes
 pytest>=8.0
@@ -228,7 +228,8 @@ pytest>=8.0
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env          # preencher OPENAI_API_KEY (ou Azure OpenAI)
+cp .env.example .env          # opcional: trocar o modelo local do Ollama
+ollama serve                  # em outro terminal
 
 # Ingerir base de conhecimento (RAG)
 python main.py rag-ingest data/knowledge/
